@@ -6,17 +6,17 @@ void Parser::advance() {
     if (++idx < tokens->size()) currentToken = (*tokens)[idx];
 }
 
-PSC::DataType Parser::getPSCType() {
+Interpreter::DataType Parser::getPSCType() {
     if (currentToken->value == "INTEGER") {
-        return PSC::DataType::INTEGER;
+        return Interpreter::DataType::INTEGER;
     } else if (currentToken->value == "REAL") {
-        return PSC::DataType::REAL;
+        return Interpreter::DataType::REAL;
     } else if (currentToken->value == "BOOLEAN") {
-        return PSC::DataType::BOOLEAN;
+        return Interpreter::DataType::BOOLEAN;
     } else if (currentToken->value == "CHAR") {
-        return PSC::DataType::CHAR;
+        return Interpreter::DataType::CHAR;
     } else if (currentToken->value == "STRING") {
-        return PSC::DataType::STRING;
+        return Interpreter::DataType::STRING;
     } else {
         std::abort();
     }
@@ -39,19 +39,19 @@ void Parser::setTokens(const std::vector<Token*> *_tokens) {
     nodes.reserve(tokens->size() / 2);
 }
 
-PSC::Block *Parser::parse() {
-    PSC::Block *block = parseBlock(BlockType::MAIN);
+Interpreter::Block *Parser::parse() {
+    Interpreter::Block *block = parseBlock(BlockType::MAIN);
 
     if (currentToken->type != TokenType::EXPRESSION_END)
-        throw PSC::SyntaxError(*currentToken);
+        throw Interpreter::SyntaxError(*currentToken);
 
     return block;
 }
 
-PSC::Block *Parser::parseBlock(BlockType blockType) {
-    PSC::Block *block;
-    if (blockType == BlockType::MAIN) block = new PSC::MainBlock();
-    else block = new PSC::Block();
+Interpreter::Block *Parser::parseBlock(BlockType blockType) {
+    Interpreter::Block *block;
+    if (blockType == BlockType::MAIN) block = new Interpreter::MainBlock();
+    else block = new Interpreter::Block();
 
     blocks.emplace_back(block);
 
@@ -84,10 +84,10 @@ PSC::Block *Parser::parseBlock(BlockType blockType) {
 
         Node *node;
         if (currentToken->type == TokenType::PROCEDURE) {
-            if (blockType != BlockType::MAIN) throw PSC::SyntaxError(*currentToken, "Procedures can only be defined in the global scope");
+            if (blockType != BlockType::MAIN) throw Interpreter::SyntaxError(*currentToken, "Procedures can only be defined in the global scope");
             node = parseProcedure();
         } else if (currentToken->type == TokenType::FUNCTION) {
-            if (blockType != BlockType::MAIN) throw PSC::SyntaxError(*currentToken, "Functions can only be defined in the global scope");
+            if (blockType != BlockType::MAIN) throw Interpreter::SyntaxError(*currentToken, "Functions can only be defined in the global scope");
             node = parseFunction();
         } else {
             node = parseExpression();
@@ -96,7 +96,7 @@ PSC::Block *Parser::parseBlock(BlockType blockType) {
         block->addNode(node);
 
         if (currentToken->type != TokenType::LINE_END && currentToken->type != TokenType::EXPRESSION_END) {
-            throw PSC::SyntaxError(*currentToken);
+            throw Interpreter::SyntaxError(*currentToken);
         }
     }
 

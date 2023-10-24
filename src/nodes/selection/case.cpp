@@ -1,86 +1,86 @@
 #include "pch.h"
 
-#include "psc/error.h"
+#include "interpreter/error.h"
 #include "nodes/selection/case.h"
 
-CaseComponent::CaseComponent(PSC::Block &block)
+CaseComponent::CaseComponent(Interpreter::Block &block)
     : block(block)
 {}
 
 
-EqualsCaseComponent::EqualsCaseComponent(PSC::Block &block, Node &node)
+EqualsCaseComponent::EqualsCaseComponent(Interpreter::Block &block, Node &node)
     : CaseComponent(block), node(node)
 {}
 
-bool EqualsCaseComponent::match(const NodeResult &value, PSC::Context &ctx) {
+bool EqualsCaseComponent::match(const NodeResult &value, Interpreter::Context &ctx) {
     auto res = node.evaluate(ctx);
 
-    if (value.type == PSC::DataType::REAL && res->type == PSC::DataType::INTEGER)
-        return value.get<PSC::Real>().value == res->get<PSC::Integer>().value;
+    if (value.type == Interpreter::DataType::REAL && res->type == Interpreter::DataType::INTEGER)
+        return value.get<Interpreter::Real>().value == res->get<Interpreter::Integer>().value;
 
-    if (value.type == PSC::DataType::INTEGER && res->type == PSC::DataType::REAL)
-        return value.get<PSC::Integer>().value == res->get<PSC::Real>().value;
+    if (value.type == Interpreter::DataType::INTEGER && res->type == Interpreter::DataType::REAL)
+        return value.get<Interpreter::Integer>().value == res->get<Interpreter::Real>().value;
 
     if (value.type != res->type) return false;
 
     switch (value.type.type) {
-        case PSC::DataType::INTEGER:
-            return value.get<PSC::Integer>().value == res->get<PSC::Integer>().value;
-        case PSC::DataType::REAL:
-            return value.get<PSC::Real>().value == res->get<PSC::Real>().value;
-        case PSC::DataType::BOOLEAN:
-            return value.get<PSC::Boolean>().value == res->get<PSC::Boolean>().value;
-        case PSC::DataType::CHAR:
-            return value.get<PSC::Char>().value == res->get<PSC::Char>().value;
-        case PSC::DataType::STRING:
-            return value.get<PSC::String>().value == res->get<PSC::String>().value;
-        case PSC::DataType::DATE:
-            return value.get<PSC::Date>().date == res->get<PSC::Date>().date;
-        case PSC::DataType::ENUM:
-            return value.get<PSC::Enum>().idx == res->get<PSC::Enum>().idx;
-        case PSC::DataType::POINTER:
-            return value.get<PSC::Pointer>().getValue() == res->get<PSC::Pointer>().getValue();
-        case PSC::DataType::COMPOSITE:
+        case Interpreter::DataType::INTEGER:
+            return value.get<Interpreter::Integer>().value == res->get<Interpreter::Integer>().value;
+        case Interpreter::DataType::REAL:
+            return value.get<Interpreter::Real>().value == res->get<Interpreter::Real>().value;
+        case Interpreter::DataType::BOOLEAN:
+            return value.get<Interpreter::Boolean>().value == res->get<Interpreter::Boolean>().value;
+        case Interpreter::DataType::CHAR:
+            return value.get<Interpreter::Char>().value == res->get<Interpreter::Char>().value;
+        case Interpreter::DataType::STRING:
+            return value.get<Interpreter::String>().value == res->get<Interpreter::String>().value;
+        case Interpreter::DataType::DATE:
+            return value.get<Interpreter::Date>().date == res->get<Interpreter::Date>().date;
+        case Interpreter::DataType::ENUM:
+            return value.get<Interpreter::Enum>().idx == res->get<Interpreter::Enum>().idx;
+        case Interpreter::DataType::POINTER:
+            return value.get<Interpreter::Pointer>().getValue() == res->get<Interpreter::Pointer>().getValue();
+        case Interpreter::DataType::COMPOSITE:
             return false;
-        case PSC::DataType::NONE: ;
+        case Interpreter::DataType::NONE: ;
     }
     std::abort();
 }
 
 
-RangeCaseComponent::RangeCaseComponent(PSC::Block &block, Node &lowerBound, Node &upperBound)
+RangeCaseComponent::RangeCaseComponent(Interpreter::Block &block, Node &lowerBound, Node &upperBound)
     : CaseComponent(block), lowerBound(lowerBound), upperBound(upperBound)
 {}
 
-bool RangeCaseComponent::match(const NodeResult &value, PSC::Context &ctx) {
-    PSC::real_t testValue;
-    if (value.type == PSC::DataType::INTEGER) testValue = value.get<PSC::Integer>().value;
-    else if (value.type == PSC::DataType::REAL) testValue = value.get<PSC::Real>().value;
+bool RangeCaseComponent::match(const NodeResult &value, Interpreter::Context &ctx) {
+    Interpreter::real_t testValue;
+    if (value.type == Interpreter::DataType::INTEGER) testValue = value.get<Interpreter::Integer>().value;
+    else if (value.type == Interpreter::DataType::REAL) testValue = value.get<Interpreter::Real>().value;
     else return false;
 
-    PSC::real_t lowerVal;
+    Interpreter::real_t lowerVal;
     auto lower = lowerBound.evaluate(ctx);
 
-    if (lower->type == PSC::DataType::INTEGER) lowerVal = lower->get<PSC::Integer>().value;
-    else if (lower->type == PSC::DataType::REAL) lowerVal = lower->get<PSC::Real>().value;
-    else throw PSC::RuntimeError(lowerBound.getToken(), ctx, "Lower bound must be of type INTEGER or REAL");
+    if (lower->type == Interpreter::DataType::INTEGER) lowerVal = lower->get<Interpreter::Integer>().value;
+    else if (lower->type == Interpreter::DataType::REAL) lowerVal = lower->get<Interpreter::Real>().value;
+    else throw Interpreter::RuntimeError(lowerBound.getToken(), ctx, "Lower bound must be of type INTEGER or REAL");
 
-    PSC::real_t upperVal;
+    Interpreter::real_t upperVal;
     auto upper = upperBound.evaluate(ctx);
 
-    if (upper->type == PSC::DataType::INTEGER) upperVal = upper->get<PSC::Integer>().value;
-    else if (upper->type == PSC::DataType::REAL) upperVal = upper->get<PSC::Real>().value;
-    else throw PSC::RuntimeError(upperBound.getToken(), ctx, "Upper bound must be of type INTEGER or REAL");
+    if (upper->type == Interpreter::DataType::INTEGER) upperVal = upper->get<Interpreter::Integer>().value;
+    else if (upper->type == Interpreter::DataType::REAL) upperVal = upper->get<Interpreter::Real>().value;
+    else throw Interpreter::RuntimeError(upperBound.getToken(), ctx, "Upper bound must be of type INTEGER or REAL");
 
     return (lowerVal <= testValue) && (testValue <= upperVal);
 }
 
 
-OtherwiseCaseComponent::OtherwiseCaseComponent(PSC::Block &block)
+OtherwiseCaseComponent::OtherwiseCaseComponent(Interpreter::Block &block)
     : CaseComponent(block)
 {}
 
-bool OtherwiseCaseComponent::match(const NodeResult&, PSC::Context&) {
+bool OtherwiseCaseComponent::match(const NodeResult&, Interpreter::Context&) {
     return true;
 }
 
@@ -89,7 +89,7 @@ void CaseNode::addCase(CaseComponent *caseComponent) {
     cases.emplace_back(caseComponent);
 }
 
-std::unique_ptr<NodeResult> CaseNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> CaseNode::evaluate(Interpreter::Context &ctx) {
     auto value = node.evaluate(ctx);
 
     for (auto &c : cases) {
@@ -99,5 +99,5 @@ std::unique_ptr<NodeResult> CaseNode::evaluate(PSC::Context &ctx) {
         }
     }
 
-    return std::make_unique<NodeResult>(nullptr, PSC::DataType::NONE);
+    return std::make_unique<NodeResult>(nullptr, Interpreter::DataType::NONE);
 }

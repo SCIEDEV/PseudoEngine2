@@ -10,10 +10,10 @@ Node *Parser::parseIfStatement() {
 
     while (currentToken->type == TokenType::LINE_END) advance();
     if (currentToken->type != TokenType::THEN)
-        throw PSC::ExpectedTokenError(*currentToken, "'THEN'");
+        throw Interpreter::ExpectedTokenError(*currentToken, "'THEN'");
     advance();
 
-    PSC::Block *block = parseBlock();
+    Interpreter::Block *block = parseBlock();
 
     std::vector<IfConditionComponent> components;
     components.emplace_back(condition, *block);
@@ -26,7 +26,7 @@ Node *Parser::parseIfStatement() {
 
             while (currentToken->type == TokenType::LINE_END) advance();
             if (currentToken->type != TokenType::THEN)
-                throw PSC::ExpectedTokenError(*currentToken, "'THEN'");
+                throw Interpreter::ExpectedTokenError(*currentToken, "'THEN'");
             advance();
 
             block = parseBlock();
@@ -39,7 +39,7 @@ Node *Parser::parseIfStatement() {
     }
 
     if (currentToken->type != TokenType::ENDIF)
-        throw PSC::ExpectedTokenError(*currentToken, "'ENDIF'");
+        throw Interpreter::ExpectedTokenError(*currentToken, "'ENDIF'");
     advance();
 
     return create<IfStatementNode>(ifToken, std::move(components));
@@ -50,11 +50,11 @@ Node *Parser::parseCaseStatement() {
     advance();
 
     if (currentToken->type != TokenType::OF)
-        throw PSC::ExpectedTokenError(*currentToken, "'OF'");
+        throw Interpreter::ExpectedTokenError(*currentToken, "'OF'");
     advance();
 
     if (currentToken->type != TokenType::IDENTIFIER)
-        throw PSC::ExpectedTokenError(*currentToken, "IDENTIFIER");
+        throw Interpreter::ExpectedTokenError(*currentToken, "IDENTIFIER");
     AccessNode *variable = create<AccessNode>(*currentToken, std::make_unique<SimpleVariableSource>(*currentToken));
     advance();
 
@@ -66,14 +66,14 @@ Node *Parser::parseCaseStatement() {
             advance();
 
             if (currentToken->type != TokenType::COLON)
-                throw PSC::ExpectedTokenError(*currentToken, "':'");
+                throw Interpreter::ExpectedTokenError(*currentToken, "':'");
             advance();
 
-            PSC::Block *block = parseBlock(BlockType::CASE);
+            Interpreter::Block *block = parseBlock(BlockType::CASE);
             caseNode->addCase(new OtherwiseCaseComponent(*block));
 
             if (currentToken->type != TokenType::ENDCASE)
-                throw PSC::ExpectedTokenError(*currentToken, "'ENDCASE'");
+                throw Interpreter::ExpectedTokenError(*currentToken, "'ENDCASE'");
             break;
         }
 
@@ -86,10 +86,10 @@ Node *Parser::parseCaseStatement() {
         }
 
         if (currentToken->type != TokenType::COLON)
-            throw PSC::ExpectedTokenError(*currentToken, "':'");
+            throw Interpreter::ExpectedTokenError(*currentToken, "':'");
         advance();
 
-        PSC::Block *block = parseBlock(BlockType::CASE);
+        Interpreter::Block *block = parseBlock(BlockType::CASE);
 
         CaseComponent *component;
         if (otherExpr == nullptr) {

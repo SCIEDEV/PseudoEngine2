@@ -9,7 +9,7 @@ Node *Parser::parseDeclareExpression() {
 
     while (true) {
         if (currentToken->type != TokenType::IDENTIFIER)
-            throw PSC::ExpectedTokenError(*currentToken, "identifier");
+            throw Interpreter::ExpectedTokenError(*currentToken, "identifier");
 
         identifiers.push_back(currentToken);
         advance();
@@ -19,14 +19,14 @@ Node *Parser::parseDeclareExpression() {
     }
 
     if (currentToken->type != TokenType::COLON)
-        throw PSC::ExpectedTokenError(*currentToken, "':'");
+        throw Interpreter::ExpectedTokenError(*currentToken, "':'");
     advance();
 
     if (currentToken->type == TokenType::ARRAY)
         return parseArrayDeclare(op, identifiers);
 
     if (currentToken->type != TokenType::DATA_TYPE && currentToken->type != TokenType::IDENTIFIER)
-        throw PSC::ExpectedTokenError(*currentToken, "data type");
+        throw Interpreter::ExpectedTokenError(*currentToken, "data type");
 
     const Token& type = *currentToken;
     advance();
@@ -39,13 +39,13 @@ Node *Parser::parseConstDeclareExpression() {
     advance();
 
     if (currentToken->type != TokenType::IDENTIFIER)
-        throw PSC::ExpectedTokenError(*currentToken, "identifier");
+        throw Interpreter::ExpectedTokenError(*currentToken, "identifier");
 
     const Token &identifier = *currentToken;
     advance();
 
     if (currentToken->type != TokenType::EQUALS && currentToken->type != TokenType::ASSIGNMENT)
-        throw PSC::ExpectedTokenError(*currentToken, "'=' or '<-'");
+        throw Interpreter::ExpectedTokenError(*currentToken, "'=' or '<-'");
     advance();
 
     Node *value;
@@ -64,7 +64,7 @@ Node *Parser::parseConstDeclareExpression() {
     } else if (currentToken->type == TokenType::STRING) {
         value = parseLiteral<StringNode>();
     } else {
-        throw PSC::ExpectedTokenError(*currentToken, " literal"); 
+        throw Interpreter::ExpectedTokenError(*currentToken, " literal");
     }
 
     if (negative) value = create<NegateNode>(minusToken, *value);
@@ -104,7 +104,7 @@ std::unique_ptr<AbstractVariableResolver> Parser::parseIdentifierExpression() {
                 }
 
                 if (currentToken->type != TokenType::RSQRBRACKET)
-                    throw PSC::ExpectedTokenError(*currentToken, "']'");
+                    throw Interpreter::ExpectedTokenError(*currentToken, "']'");
                 advance();
 
                 resolver = std::make_unique<ArrayElementResolver>(token, std::move(resolver), std::move(indices));

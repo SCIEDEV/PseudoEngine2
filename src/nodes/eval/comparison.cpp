@@ -1,7 +1,7 @@
 #include "pch.h"
 
-#include "psc/error.h"
-#include "psc/types/types.h"
+#include "interpreter/error.h"
+#include "interpreter/types/types.h"
 #include "nodes/eval/comparison.h"
 
 BooleanNode::BooleanNode(const Token &token)
@@ -10,8 +10,8 @@ BooleanNode::BooleanNode(const Token &token)
     if (!this->value && token.type != TokenType::FALSE) std::abort();
 }
 
-std::unique_ptr<NodeResult> BooleanNode::evaluate(PSC::Context&) {
-    return std::make_unique<NodeResult>(new PSC::Boolean(value), PSC::DataType::BOOLEAN);
+std::unique_ptr<NodeResult> BooleanNode::evaluate(Interpreter::Context&) {
+    return std::make_unique<NodeResult>(new Interpreter::Boolean(value), Interpreter::DataType::BOOLEAN);
 }
 
 
@@ -42,50 +42,50 @@ ComparisonNode::ComparisonNode(const Token &token, Node &left, Node &right)
     }
 }
 
-std::unique_ptr<NodeResult> ComparisonNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> ComparisonNode::evaluate(Interpreter::Context &ctx) {
     auto leftRes = left.evaluate(ctx);
     auto rightRes = right.evaluate(ctx);
 
-    if (leftRes->type == PSC::DataType::CHAR && rightRes->type == PSC::DataType::CHAR) {
-        leftRes->type = rightRes->type = PSC::DataType::INTEGER;
-        leftRes->data = leftRes->get<PSC::Char>().toInteger();
-        rightRes->data = rightRes->get<PSC::Char>().toInteger();
-    } else if (leftRes->type == PSC::DataType::DATE && rightRes->type == PSC::DataType::DATE) {
-        leftRes->type = rightRes->type = PSC::DataType::INTEGER;
-        leftRes->data = leftRes->get<PSC::Date>().toInteger();
-        rightRes->data = rightRes->get<PSC::Date>().toInteger();
+    if (leftRes->type == Interpreter::DataType::CHAR && rightRes->type == Interpreter::DataType::CHAR) {
+        leftRes->type = rightRes->type = Interpreter::DataType::INTEGER;
+        leftRes->data = leftRes->get<Interpreter::Char>().toInteger();
+        rightRes->data = rightRes->get<Interpreter::Char>().toInteger();
+    } else if (leftRes->type == Interpreter::DataType::DATE && rightRes->type == Interpreter::DataType::DATE) {
+        leftRes->type = rightRes->type = Interpreter::DataType::INTEGER;
+        leftRes->data = leftRes->get<Interpreter::Date>().toInteger();
+        rightRes->data = rightRes->get<Interpreter::Date>().toInteger();
     }
 
-    if ((leftRes->type != PSC::DataType::INTEGER && leftRes->type != PSC::DataType::REAL)
-        || (rightRes->type != PSC::DataType::INTEGER && rightRes->type != PSC::DataType::REAL)
+    if ((leftRes->type != Interpreter::DataType::INTEGER && leftRes->type != Interpreter::DataType::REAL)
+        || (rightRes->type != Interpreter::DataType::INTEGER && rightRes->type != Interpreter::DataType::REAL)
     ) {
         bool eq = token.type == TokenType::EQUALS;
         if (!eq && token.type != TokenType::NOT_EQUALS)
-            throw PSC::InvalidUsageError(token, ctx, "'" + op + "' operator, operands must be of numeric data type");
+            throw Interpreter::InvalidUsageError(token, ctx, "'" + op + "' operator, operands must be of numeric data type");
 
         if (leftRes->type != rightRes->type) {
-            return std::make_unique<NodeResult>(new PSC::Boolean(!eq), PSC::DataType::BOOLEAN);
-        } else if (leftRes->type == PSC::DataType::BOOLEAN) {
-            bool comparisonEq = leftRes->get<PSC::Boolean>() == rightRes->get<PSC::Boolean>();
+            return std::make_unique<NodeResult>(new Interpreter::Boolean(!eq), Interpreter::DataType::BOOLEAN);
+        } else if (leftRes->type == Interpreter::DataType::BOOLEAN) {
+            bool comparisonEq = leftRes->get<Interpreter::Boolean>() == rightRes->get<Interpreter::Boolean>();
             bool res = (!eq && !comparisonEq) || (eq && comparisonEq);
-            return std::make_unique<NodeResult>(new PSC::Boolean(res), PSC::DataType::BOOLEAN);
-        } else if (leftRes->type == PSC::DataType::STRING) {
-            bool comparisonEq = leftRes->get<PSC::String>().value == rightRes->get<PSC::String>().value;
+            return std::make_unique<NodeResult>(new Interpreter::Boolean(res), Interpreter::DataType::BOOLEAN);
+        } else if (leftRes->type == Interpreter::DataType::STRING) {
+            bool comparisonEq = leftRes->get<Interpreter::String>().value == rightRes->get<Interpreter::String>().value;
             bool res = (!eq && !comparisonEq) || (eq && comparisonEq);
-            return std::make_unique<NodeResult>(new PSC::Boolean(res), PSC::DataType::BOOLEAN);
-        } else if (leftRes->type == PSC::DataType::ENUM) {
-            bool comparisonEq = leftRes->get<PSC::Enum>().idx == rightRes->get<PSC::Enum>().idx;
+            return std::make_unique<NodeResult>(new Interpreter::Boolean(res), Interpreter::DataType::BOOLEAN);
+        } else if (leftRes->type == Interpreter::DataType::ENUM) {
+            bool comparisonEq = leftRes->get<Interpreter::Enum>().idx == rightRes->get<Interpreter::Enum>().idx;
             bool res = (!eq && !comparisonEq) || (eq && comparisonEq);
-            return std::make_unique<NodeResult>(new PSC::Boolean(res), PSC::DataType::BOOLEAN);
+            return std::make_unique<NodeResult>(new Interpreter::Boolean(res), Interpreter::DataType::BOOLEAN);
         } else {
-            throw PSC::InvalidUsageError(token, ctx, "'" + op + "' operator, operands must be of comparable type");
+            throw Interpreter::InvalidUsageError(token, ctx, "'" + op + "' operator, operands must be of comparable type");
         }
     }
 
-    const PSC::Number &leftNum = leftRes->get<PSC::Number>();
-    const PSC::Number &rightNum = rightRes->get<PSC::Number>();
+    const Interpreter::Number &leftNum = leftRes->get<Interpreter::Number>();
+    const Interpreter::Number &rightNum = rightRes->get<Interpreter::Number>();
 
-    std::unique_ptr<PSC::Boolean> res;
+    std::unique_ptr<Interpreter::Boolean> res;
     switch (token.type) {
         case TokenType::EQUALS:
             res = leftNum == rightNum;
@@ -109,5 +109,5 @@ std::unique_ptr<NodeResult> ComparisonNode::evaluate(PSC::Context &ctx) {
             std::abort();
     }
 
-    return std::make_unique<NodeResult>(std::move(res), PSC::DataType::BOOLEAN);
+    return std::make_unique<NodeResult>(std::move(res), Interpreter::DataType::BOOLEAN);
 }

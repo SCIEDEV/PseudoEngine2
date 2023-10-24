@@ -1,19 +1,19 @@
 #include "pch.h"
 
-#include "psc/error.h"
-#include "psc/scope/block.h"
+#include "interpreter/error.h"
+#include "interpreter/scope/block.h"
 #include "nodes/variable/variable.h"
 #include "nodes/variable/array.h"
 #include "nodes/functions/function.h"
 
 FunctionNode::FunctionNode(
-    const Token &token,
-    const std::string &functionName,
-    std::vector<std::string> &&parameterNames,
-    std::vector<const Token*> &&parameterTypes,
-    std::vector<bool> &&parameterPassTypes,
-    PSC::Block &block,
-    const Token &returnType
+		const Token &token,
+		const std::string &functionName,
+		std::vector<std::string> &&parameterNames,
+		std::vector<const Token*> &&parameterTypes,
+		std::vector<bool> &&parameterPassTypes,
+		Interpreter::Block &block,
+		const Token &returnType
 )
 : Node(token),
     functionName(functionName),
@@ -24,29 +24,29 @@ FunctionNode::FunctionNode(
     returnType(returnType)
 {}
 
-std::unique_ptr<NodeResult> FunctionNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> FunctionNode::evaluate(Interpreter::Context &ctx) {
     if (ctx.getFunction(functionName) != nullptr)
-        throw PSC::RedefinitionError(token, ctx, functionName);
+        throw Interpreter::RedefinitionError(token, ctx, functionName);
 
-    PSC::DataType returnDataType = ctx.getType(returnType);
-    if (returnDataType == PSC::DataType::NONE)
-        throw PSC::NotDefinedError(returnType, ctx, "Type '" + returnType.value + "'");
+    Interpreter::DataType returnDataType = ctx.getType(returnType);
+    if (returnDataType == Interpreter::DataType::NONE)
+        throw Interpreter::NotDefinedError(returnType, ctx, "Type '" + returnType.value + "'");
 
     size_t parametersSize = parameterNames.size();
-    std::vector<PSC::Parameter> parameters;
+    std::vector<Interpreter::Parameter> parameters;
     parameters.reserve(parametersSize);
     for (size_t i = 0; i < parametersSize; i++) {
         const Token *typeToken = parameterTypes[i];
-        PSC::DataType type = ctx.getType(*typeToken);
-        if (type == PSC::DataType::NONE)
-            throw PSC::NotDefinedError(*typeToken, ctx, "Type '" + typeToken->value + "'");
+        Interpreter::DataType type = ctx.getType(*typeToken);
+        if (type == Interpreter::DataType::NONE)
+            throw Interpreter::NotDefinedError(*typeToken, ctx, "Type '" + typeToken->value + "'");
         parameters.emplace_back(parameterNames[i], type, parameterPassTypes[i]);
     }
 
-    auto function = std::make_unique<PSC::Function>(functionName, std::move(parameters), &block, returnDataType, &token);
+    auto function = std::make_unique<Interpreter::Function>(functionName, std::move(parameters), &block, returnDataType, &token);
     ctx.addFunction(std::move(function));
 
-    return std::make_unique<NodeResult>(nullptr, PSC::DataType::NONE);
+    return std::make_unique<NodeResult>(nullptr, Interpreter::DataType::NONE);
 }
 
 
@@ -54,14 +54,14 @@ FunctionCallNode::FunctionCallNode(const Token &token, std::vector<Node*> &&args
     : Node(token), functionName(token.value), args(std::move(args))
 {}
 
-std::unique_ptr<NodeResult> FunctionCallNode::evaluate(PSC::Context &ctx) {
-    PSC::Function *function = ctx.getFunction(functionName);
+std::unique_ptr<NodeResult> FunctionCallNode::evaluate(Interpreter::Context &ctx) {
+    Interpreter::Function *function = ctx.getFunction(functionName);
 
     if (function == nullptr)
-        throw PSC::NotDefinedError(token, ctx, "Function '" + functionName + "'");
+        throw Interpreter::NotDefinedError(token, ctx, "Function '" + functionName + "'");
 
     std::vector<std::unique_ptr<NodeResult>> argResults;
-    std::vector<PSC::DataType> argTypes;
+    std::vector<Interpreter::DataType> argTypes;
     argResults.reserve(args.size());
     argTypes.reserve(args.size());
 
@@ -72,65 +72,65 @@ std::unique_ptr<NodeResult> FunctionCallNode::evaluate(PSC::Context &ctx) {
 
     size_t nArgs = function->parameters.size();
     if (args.size() != nArgs)
-        throw PSC::InvalidArgsError(token, ctx, function->getTypes(), std::move(argTypes));
+        throw Interpreter::InvalidArgsError(token, ctx, function->getTypes(), std::move(argTypes));
 
-    auto functionCtx = std::make_unique<PSC::Context>(&ctx, functionName, true, function->returnType);
+    auto functionCtx = std::make_unique<Interpreter::Context>(&ctx, functionName, true, function->returnType);
     ctx.switchToken = &token;
 
     for (size_t i = 0; i < args.size(); i++) {
         auto &argRes = argResults[i];
-        const PSC::Parameter &parameter = function->parameters[i];
+        const Interpreter::Parameter &parameter = function->parameters[i];
 
         if (!parameter.byRef) argRes->implicitCast(parameter.type);
         if (parameter.type != argRes->type) {
-            throw PSC::InvalidArgsError(token, ctx, function->getTypes(), std::move(argTypes));
+            throw Interpreter::InvalidArgsError(token, ctx, function->getTypes(), std::move(argTypes));
         }
 
-        PSC::Variable *var;
+        Interpreter::Variable *var;
         if (parameter.byRef) {
             AccessNode *accsNode = dynamic_cast<AccessNode*>(args[i]);
             if (!accsNode) {
-                throw PSC::RuntimeError(token, ctx, "Only variables can be used as arguements when passing by reference");
+                throw Interpreter::RuntimeError(token, ctx, "Only variables can be used as arguements when passing by reference");
             }
 
             auto &holder = accsNode->getResolver().resolve(ctx);
             if (holder.isArray())
-                throw PSC::ArrayDirectAccessError(token, ctx);
+                throw Interpreter::ArrayDirectAccessError(token, ctx);
 
-            PSC::Variable &original = *static_cast<PSC::Variable*>(&holder);
+            Interpreter::Variable &original = *static_cast<Interpreter::Variable*>(&holder);
             var = original.createReference(parameter.name);
         } else {
-            var = new PSC::Variable(parameter.name, argRes->type, false, functionCtx.get());
+            var = new Interpreter::Variable(parameter.name, argRes->type, false, functionCtx.get());
 
             switch (var->type.type) {
-                case PSC::DataType::INTEGER:
-                    var->get<PSC::Integer>() = argRes->get<PSC::Integer>();
+                case Interpreter::DataType::INTEGER:
+                    var->get<Interpreter::Integer>() = argRes->get<Interpreter::Integer>();
                     break;
-                case PSC::DataType::REAL:
-                    var->get<PSC::Real>() = argRes->get<PSC::Real>();
+                case Interpreter::DataType::REAL:
+                    var->get<Interpreter::Real>() = argRes->get<Interpreter::Real>();
                     break;
-                case PSC::DataType::BOOLEAN:
-                    var->get<PSC::Boolean>() = argRes->get<PSC::Boolean>();
+                case Interpreter::DataType::BOOLEAN:
+                    var->get<Interpreter::Boolean>() = argRes->get<Interpreter::Boolean>();
                     break;
-                case PSC::DataType::CHAR:
-                    var->get<PSC::Char>() = argRes->get<PSC::Char>();
+                case Interpreter::DataType::CHAR:
+                    var->get<Interpreter::Char>() = argRes->get<Interpreter::Char>();
                     break;
-                case PSC::DataType::STRING:
-                    var->get<PSC::String>() = argRes->get<PSC::String>();
+                case Interpreter::DataType::STRING:
+                    var->get<Interpreter::String>() = argRes->get<Interpreter::String>();
                     break;
-                case PSC::DataType::DATE:
-                    var->get<PSC::Date>() = argRes->get<PSC::Date>();
+                case Interpreter::DataType::DATE:
+                    var->get<Interpreter::Date>() = argRes->get<Interpreter::Date>();
                     break;
-                case PSC::DataType::ENUM:
-                    var->get<PSC::Enum>() = argRes->get<PSC::Enum>();
+                case Interpreter::DataType::ENUM:
+                    var->get<Interpreter::Enum>() = argRes->get<Interpreter::Enum>();
                     break;
-                case PSC::DataType::POINTER:
-                    var->get<PSC::Pointer>() = argRes->get<PSC::Pointer>();
+                case Interpreter::DataType::POINTER:
+                    var->get<Interpreter::Pointer>() = argRes->get<Interpreter::Pointer>();
                     break;
-                case PSC::DataType::COMPOSITE:
-                    var->get<PSC::Composite>() = argRes->get<PSC::Composite>();
+                case Interpreter::DataType::COMPOSITE:
+                    var->get<Interpreter::Composite>() = argRes->get<Interpreter::Composite>();
                     break;
-                case PSC::DataType::NONE:
+                case Interpreter::DataType::NONE:
                     std::abort();
             }
         }
@@ -143,22 +143,22 @@ std::unique_ptr<NodeResult> FunctionCallNode::evaluate(PSC::Context &ctx) {
     } catch (ReturnErrSignal&) {}
 
     if (!functionCtx->returnValue)
-        throw PSC::RuntimeError(*(function->defToken), *functionCtx, "Missing RETURN statement");
+        throw Interpreter::RuntimeError(*(function->defToken), *functionCtx, "Missing RETURN statement");
 
     ctx.switchToken = nullptr;
 
     return std::move(functionCtx->returnValue);
 }
 
-std::unique_ptr<NodeResult> ReturnNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> ReturnNode::evaluate(Interpreter::Context &ctx) {
     if (!ctx.isFunctionCtx) 
-        throw PSC::InvalidUsageError(token, ctx, "RETURN statement");
+        throw Interpreter::InvalidUsageError(token, ctx, "RETURN statement");
 
     ctx.returnValue = node.evaluate(ctx);
     ctx.returnValue->implicitCast(ctx.returnType);
 
     if (ctx.returnValue->type != ctx.returnType)
-        throw PSC::RuntimeError(token, ctx, "Invalid return type");
+        throw Interpreter::RuntimeError(token, ctx, "Invalid return type");
 
     throw ReturnErrSignal();
 }

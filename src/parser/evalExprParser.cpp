@@ -153,7 +153,7 @@ Node *Parser::parseAtom() {
                 advance();
 
                 if (currentToken->type != TokenType::IDENTIFIER)
-                    throw PSC::ExpectedTokenError(*currentToken, "identifier");
+                    throw Interpreter::ExpectedTokenError(*currentToken, "identifier");
                 auto valueResolver = parseIdentifierExpression();
 
                 return create<PointerAssignNode>(refToken, std::move(resolver), std::move(valueResolver));
@@ -181,7 +181,7 @@ Node *Parser::parseAtom() {
         Node *expr = parseEvaluationExpression();
 
         if (currentToken->type != TokenType::RPAREN)
-            throw PSC::ExpectedTokenError(*currentToken, "')'");
+            throw Interpreter::ExpectedTokenError(*currentToken, "')'");
 
         advance();
         return expr;
@@ -191,7 +191,7 @@ Node *Parser::parseAtom() {
         return parseModDivFn();
     }
 
-    throw PSC::ExpectedTokenError(*currentToken, "value or expression");
+    throw Interpreter::ExpectedTokenError(*currentToken, "value or expression");
 }
 
 Node *Parser::parseModDivFn() {
@@ -204,13 +204,13 @@ Node *Parser::parseModDivFn() {
     Node *expr = parseEvaluationExpression();
 
     if (currentToken->type != TokenType::COMMA)
-        throw PSC::ExpectedTokenError(*currentToken, "','");
+        throw Interpreter::ExpectedTokenError(*currentToken, "','");
     advance();
 
     Node *otherExpr = parseEvaluationExpression();
 
     if (currentToken->type != TokenType::RPAREN)
-        throw PSC::ExpectedTokenError(*currentToken, "')'");
+        throw Interpreter::ExpectedTokenError(*currentToken, "')'");
     advance();
 
     return create<ArithmeticOperationNode>(token, *expr, *otherExpr);
@@ -218,17 +218,17 @@ Node *Parser::parseModDivFn() {
 
 Node *Parser::parseCast() {
     const Token &token = *currentToken;
-    PSC::DataType type = getPSCType();
+    Interpreter::DataType type = getPSCType();
     advance();
 
     if (currentToken->type != TokenType::LPAREN)
-        throw PSC::ExpectedTokenError(*currentToken, "'('");
+        throw Interpreter::ExpectedTokenError(*currentToken, "'('");
     advance();
 
     Node *expr = parseEvaluationExpression();
 
     if (currentToken->type != TokenType::RPAREN)
-        throw PSC::ExpectedTokenError(*currentToken, "')'");
+        throw Interpreter::ExpectedTokenError(*currentToken, "')'");
     advance();
 
     return create<CastNode>(token, *expr, type);

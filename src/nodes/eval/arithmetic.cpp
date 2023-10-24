@@ -4,18 +4,18 @@
 
 #include <chrono>
 #include <memory>
-#include "psc/error.h"
+#include "interpreter/error.h"
 #include "nodes/eval/arithmetic.h"
-#include "psc/types/datatypes.h"
-#include "psc/types/type_definitions.h"
-#include "psc/types/types.h"
+#include "interpreter/types/datatypes.h"
+#include "interpreter/types/type_definitions.h"
+#include "interpreter/types/types.h"
 
 IntegerNode::IntegerNode(const Token &token)
     : Node(token), valueInt(std::stol(token.value))
 {}
 
-std::unique_ptr<NodeResult> IntegerNode::evaluate(PSC::Context&) {
-    return std::make_unique<NodeResult>(new PSC::Integer(valueInt), PSC::DataType::INTEGER);
+std::unique_ptr<NodeResult> IntegerNode::evaluate(Interpreter::Context&) {
+    return std::make_unique<NodeResult>(new Interpreter::Integer(valueInt), Interpreter::DataType::INTEGER);
 }
 
 
@@ -23,8 +23,8 @@ RealNode::RealNode(const Token &token)
     : Node(token), valueReal(std::stod(token.value))
 {}
 
-std::unique_ptr<NodeResult> RealNode::evaluate(PSC::Context&) {
-    return std::make_unique<NodeResult>(new PSC::Real(valueReal), PSC::DataType::REAL);
+std::unique_ptr<NodeResult> RealNode::evaluate(Interpreter::Context&) {
+    return std::make_unique<NodeResult>(new Interpreter::Real(valueReal), Interpreter::DataType::REAL);
 }
 
 
@@ -32,19 +32,19 @@ CharNode::CharNode(const Token &token)
     : Node(token), valueChar(token.value[0])
 {}
 
-std::unique_ptr<NodeResult> CharNode::evaluate(PSC::Context&) {
-    return std::make_unique<NodeResult>(new PSC::Char(valueChar), PSC::DataType::CHAR);
+std::unique_ptr<NodeResult> CharNode::evaluate(Interpreter::Context&) {
+    return std::make_unique<NodeResult>(new Interpreter::Char(valueChar), Interpreter::DataType::CHAR);
 }
 
 StringNode::StringNode(const Token &token)
     : Node(token), valueStr(token.value)
 {}
 
-std::unique_ptr<NodeResult> StringNode::evaluate(PSC::Context&) {
-    return std::make_unique<NodeResult>(new PSC::String(valueStr), PSC::DataType::STRING);
+std::unique_ptr<NodeResult> StringNode::evaluate(Interpreter::Context&) {
+    return std::make_unique<NodeResult>(new Interpreter::String(valueStr), Interpreter::DataType::STRING);
 }
 
-inline PSC::Date makeDate(const std::string &dateStr) {
+inline Interpreter::Date makeDate(const std::string &dateStr) {
     std::string dayStr, monthStr, yearStr;
     int x = 0;
     for (char c : dateStr) {
@@ -62,31 +62,31 @@ inline PSC::Date makeDate(const std::string &dateStr) {
     std::chrono::month month(std::stoul(monthStr));
     std::chrono::year year(std::stoul(yearStr));
 
-    return PSC::Date(std::chrono::year_month_day(year, month, day));
+    return Interpreter::Date(std::chrono::year_month_day(year, month, day));
 }
 
 DateNode::DateNode(const Token &token)
     : Node(token), valueDate(makeDate(token.value))
 {}
 
-std::unique_ptr<NodeResult> DateNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> DateNode::evaluate(Interpreter::Context &ctx) {
     if (!valueDate.date.ok())
-        throw PSC::RuntimeError(token, ctx, "Invalid Date!");
-    return std::make_unique<NodeResult>(new PSC::Date(valueDate), PSC::DataType::DATE);
+        throw Interpreter::RuntimeError(token, ctx, "Invalid Date!");
+    return std::make_unique<NodeResult>(new Interpreter::Date(valueDate), Interpreter::DataType::DATE);
 }
 
 
-std::unique_ptr<NodeResult> NegateNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> NegateNode::evaluate(Interpreter::Context &ctx) {
     auto nodeResult = node.evaluate(ctx);
 
-    if (nodeResult->type != PSC::DataType::INTEGER && nodeResult->type != PSC::DataType::REAL) {
-        throw PSC::InvalidUsageError(token, ctx, "'-' operator, operand must be of type Integer or Real");
+    if (nodeResult->type != Interpreter::DataType::INTEGER && nodeResult->type != Interpreter::DataType::REAL) {
+        throw Interpreter::InvalidUsageError(token, ctx, "'-' operator, operand must be of type Integer or Real");
     }
 
-    const PSC::Number &num = nodeResult->get<PSC::Number>();
-    auto res = num * PSC::Integer(-1);
+    const Interpreter::Number &num = nodeResult->get<Interpreter::Number>();
+    auto res = num * Interpreter::Integer(-1);
 
-    PSC::DataType type = res->real ? PSC::DataType::REAL : PSC::DataType::INTEGER;
+    Interpreter::DataType type = res->real ? Interpreter::DataType::REAL : Interpreter::DataType::INTEGER;
     return std::make_unique<NodeResult>(std::move(res), type);
 }
 
@@ -116,21 +116,21 @@ ArithmeticOperationNode::ArithmeticOperationNode(const Token &token, Node &left,
     }
 }
 
-std::unique_ptr<NodeResult> ArithmeticOperationNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> ArithmeticOperationNode::evaluate(Interpreter::Context &ctx) {
     auto leftRes = left.evaluate(ctx);
     auto rightRes = right.evaluate(ctx);
 
     bool enumSwap = false;
-    if (leftRes->type == PSC::DataType::INTEGER && rightRes->type == PSC::DataType::ENUM) {
+    if (leftRes->type == Interpreter::DataType::INTEGER && rightRes->type == Interpreter::DataType::ENUM) {
         leftRes.swap(rightRes);
         enumSwap = true;
     }
-    if (leftRes->type == PSC::DataType::ENUM && rightRes->type == PSC::DataType::INTEGER
-        && (token.type == TokenType::PLUS || token.type == TokenType::MINUS)) {
-        const PSC::Enum &enumVal = leftRes->get<PSC::Enum>();
-        const PSC::Integer &integer = rightRes->get<PSC::Integer>();
+    if (leftRes->type == Interpreter::DataType::ENUM && rightRes->type == Interpreter::DataType::INTEGER
+		&& (token.type == TokenType::PLUS || token.type == TokenType::MINUS)) {
+        const Interpreter::Enum &enumVal = leftRes->get<Interpreter::Enum>();
+        const Interpreter::Integer &integer = rightRes->get<Interpreter::Integer>();
 
-        PSC::int_t left, right;
+        Interpreter::int_t left, right;
         if (enumSwap) {
             left = integer.value;
             right = enumVal.idx;
@@ -139,33 +139,33 @@ std::unique_ptr<NodeResult> ArithmeticOperationNode::evaluate(PSC::Context &ctx)
             right = integer.value;
         }
 
-        PSC::int_t res;
+        Interpreter::int_t res;
         if (token.type == TokenType::PLUS) {
             res = left + right;
         } else {
             res = left - right;
         }
 
-        const PSC::EnumTypeDefinition &definition = enumVal.getDefinition(ctx);
+        const Interpreter::EnumTypeDefinition &definition = enumVal.getDefinition(ctx);
         std::size_t enumSize = definition.values.size();
         res %= enumSize;
         if (res < 0) res += enumSize;
 
-        std::unique_ptr<PSC::Enum> resEnum = std::make_unique<PSC::Enum>(definition.name);
+        std::unique_ptr<Interpreter::Enum> resEnum = std::make_unique<Interpreter::Enum>(definition.name);
         resEnum->idx = res;
-        return std::make_unique<NodeResult>(std::move(resEnum), PSC::DataType::ENUM);
+        return std::make_unique<NodeResult>(std::move(resEnum), Interpreter::DataType::ENUM);
     }
 
-    if ((leftRes->type != PSC::DataType::INTEGER && leftRes->type != PSC::DataType::REAL)
-        || (rightRes->type != PSC::DataType::INTEGER && rightRes->type != PSC::DataType::REAL)
+    if ((leftRes->type != Interpreter::DataType::INTEGER && leftRes->type != Interpreter::DataType::REAL)
+        || (rightRes->type != Interpreter::DataType::INTEGER && rightRes->type != Interpreter::DataType::REAL)
     ) {
-        throw PSC::InvalidUsageError(token, ctx, "'" + op + "' operator, operands must be of type Integer or Real");
+        throw Interpreter::InvalidUsageError(token, ctx, "'" + op + "' operator, operands must be of type Integer or Real");
     }
 
-    const PSC::Number &leftNum = leftRes->get<PSC::Number>();
-    const PSC::Number &rightNum = rightRes->get<PSC::Number>();
+    const Interpreter::Number &leftNum = leftRes->get<Interpreter::Number>();
+    const Interpreter::Number &rightNum = rightRes->get<Interpreter::Number>();
 
-    std::unique_ptr<PSC::Number> resNum;
+    std::unique_ptr<Interpreter::Number> resNum;
     switch (token.type) {
         case TokenType::PLUS:
             resNum = leftNum + rightNum;
@@ -177,27 +177,27 @@ std::unique_ptr<NodeResult> ArithmeticOperationNode::evaluate(PSC::Context &ctx)
             resNum = leftNum * rightNum;
             break;
         case TokenType::SLASH:
-            if ((rightNum.real && ((PSC::Real&) rightNum).value == 0)
-                || (!rightNum.real && ((PSC::Integer&) rightNum).value == 0)
-            ) throw PSC::RuntimeError(token, ctx, "Division by 0");
+            if ((rightNum.real && ((Interpreter::Real&) rightNum).value == 0)
+                || (!rightNum.real && ((Interpreter::Integer&) rightNum).value == 0)
+            ) throw Interpreter::RuntimeError(token, ctx, "Division by 0");
             resNum = leftNum / rightNum;
             break;
         case TokenType::MOD:
-            if ((rightNum.real && ((PSC::Real&) rightNum).value == 0)
-                || (!rightNum.real && ((PSC::Integer&) rightNum).value == 0)
-            ) throw PSC::RuntimeError(token, ctx, "Modulus by 0");
+            if ((rightNum.real && ((Interpreter::Real&) rightNum).value == 0)
+                || (!rightNum.real && ((Interpreter::Integer&) rightNum).value == 0)
+            ) throw Interpreter::RuntimeError(token, ctx, "Modulus by 0");
             resNum = leftNum % rightNum;
             break;
         case TokenType::DIV:
-        if ((rightNum.real && ((PSC::Real&) rightNum).value == 0)
-                || (!rightNum.real && ((PSC::Integer&) rightNum).value == 0)
-            ) throw PSC::RuntimeError(token, ctx, "Division by 0");
+        if ((rightNum.real && ((Interpreter::Real&) rightNum).value == 0)
+                || (!rightNum.real && ((Interpreter::Integer&) rightNum).value == 0)
+            ) throw Interpreter::RuntimeError(token, ctx, "Division by 0");
             resNum = leftNum | rightNum;
             break;
         default:
             std::abort();
     }
 
-    PSC::DataType type = resNum->real ? PSC::DataType::REAL : PSC::DataType::INTEGER;
+    Interpreter::DataType type = resNum->real ? Interpreter::DataType::REAL : Interpreter::DataType::INTEGER;
     return std::make_unique<NodeResult>(std::move(resNum), type);
 }

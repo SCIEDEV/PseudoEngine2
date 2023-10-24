@@ -7,7 +7,7 @@ Node *Parser::parseArrayDeclare(const Token &declareToken, std::vector<const Tok
     advance();
 
     if (currentToken->type != TokenType::LSQRBRACKET)
-        throw PSC::ExpectedTokenError(*currentToken, "'['");
+        throw Interpreter::ExpectedTokenError(*currentToken, "'['");
     advance();
 
     std::vector<Node*> bounds;
@@ -16,7 +16,7 @@ Node *Parser::parseArrayDeclare(const Token &declareToken, std::vector<const Tok
         Node *lowerBound = parseArithmeticExpression();
 
         if (currentToken->type != TokenType::COLON)
-            throw PSC::ExpectedTokenError(*currentToken, "':'");
+            throw Interpreter::ExpectedTokenError(*currentToken, "':'");
         advance();
 
         Node *upperBound = parseArithmeticExpression();
@@ -29,15 +29,15 @@ Node *Parser::parseArrayDeclare(const Token &declareToken, std::vector<const Tok
     }
 
     if (currentToken->type != TokenType::RSQRBRACKET)
-        throw PSC::ExpectedTokenError(*currentToken, "']'");
+        throw Interpreter::ExpectedTokenError(*currentToken, "']'");
     advance();
 
     if (currentToken->type != TokenType::OF)
-        throw PSC::ExpectedTokenError(*currentToken, "'OF'");
+        throw Interpreter::ExpectedTokenError(*currentToken, "'OF'");
     advance();
 
     if (currentToken->type != TokenType::DATA_TYPE && currentToken->type != TokenType::IDENTIFIER)
-        throw PSC::ExpectedTokenError(*currentToken, "data type");
+        throw Interpreter::ExpectedTokenError(*currentToken, "data type");
 
     const Token &type = *currentToken;
     advance();

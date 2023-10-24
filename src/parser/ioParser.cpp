@@ -22,7 +22,7 @@ Node *Parser::parseInput() {
     advance();
 
     if (currentToken->type != TokenType::IDENTIFIER)
-        throw PSC::ExpectedTokenError(*currentToken, "variable");
+        throw Interpreter::ExpectedTokenError(*currentToken, "variable");
     auto resolver = parseIdentifierExpression();
 
     return create<InputNode>(inputToken, std::move(resolver));
@@ -35,22 +35,22 @@ Node *Parser::parseOpenFile() {
     Node *filename = parseStringExpression();
 
     if (currentToken->type != TokenType::FOR)
-        throw PSC::ExpectedTokenError(*currentToken, "FOR");
+        throw Interpreter::ExpectedTokenError(*currentToken, "FOR");
     advance();
 
-    PSC::FileMode mode;
+    Interpreter::FileMode mode;
     switch (currentToken->type) {
         case TokenType::READ:
-            mode = PSC::FileMode::READ;
+            mode = Interpreter::FileMode::READ;
             break;
         case TokenType::WRITE:
-            mode = PSC::FileMode::WRITE;
+            mode = Interpreter::FileMode::WRITE;
             break;
         case TokenType::APPEND:
-            mode = PSC::FileMode::APPEND;
+            mode = Interpreter::FileMode::APPEND;
             break;
         default:
-            throw PSC::ExpectedTokenError(*currentToken, "READ, WRITE or APPEND");
+            throw Interpreter::ExpectedTokenError(*currentToken, "READ, WRITE or APPEND");
     }
     advance();
 
@@ -65,11 +65,11 @@ Node *Parser::parseReadFile() {
     Node *filename = parseStringExpression();
 
     if (currentToken->type != TokenType::COMMA)
-        throw PSC::ExpectedTokenError(*currentToken, "','");
+        throw Interpreter::ExpectedTokenError(*currentToken, "','");
     advance();
 
     if (currentToken->type != TokenType::IDENTIFIER)
-        throw PSC::ExpectedTokenError(*currentToken, "variable");
+        throw Interpreter::ExpectedTokenError(*currentToken, "variable");
     
     Node *readFileNode = create<ReadFileNode>(token, *filename, *currentToken);
     advance();
@@ -84,7 +84,7 @@ Node *Parser::parseWriteFile() {
     Node *filename = parseStringExpression();
 
     if (currentToken->type != TokenType::COMMA)
-        throw PSC::ExpectedTokenError(*currentToken, "','");
+        throw Interpreter::ExpectedTokenError(*currentToken, "','");
     advance();
 
     Node *data = parseEvaluationExpression();
