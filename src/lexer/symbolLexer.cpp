@@ -197,7 +197,7 @@ char escSeqFmt(char code) {
 
 void Lexer::makeChar() {
     if (idx + 2 >= expr->size()) 
-        throw PSC::LexerError(line, column, "Char must contain at least once character");
+        throw Interpreter::LexerError(line, column, "Char must contain at least once character");
 
     int startColumn = column;
     advance();
@@ -206,15 +206,15 @@ void Lexer::makeChar() {
     if (currentChar == '\\') {
         advance();
         c = escSeqFmt(currentChar);
-        if (c == -1) throw PSC::LexerError(line, column, "Invalid escape sequence");
+        if (c == -1) throw Interpreter::LexerError(line, column, "Invalid escape sequence");
     } else if (currentChar == '\'') {
-        throw PSC::LexerError(line, column, "Char must contain at least once character");
+        throw Interpreter::LexerError(line, column, "Char must contain at least once character");
     } else {
         c = currentChar;
     }
 
     if (idx + 1 >= expr->size() || (*expr)[idx + 1] != '\'')
-        throw PSC::ExpectedQuotesError(line, column, false);
+        throw Interpreter::ExpectedQuotesError(line, column, false);
     advance();
     advance();
 
@@ -232,7 +232,7 @@ void Lexer::makeString() {
         if (currentChar == '\\') {
             advance();
             char c = escSeqFmt(currentChar);
-            if (c == -1) throw PSC::LexerError(line, column, "Invalid escape sequence");
+            if (c == -1) throw Interpreter::LexerError(line, column, "Invalid escape sequence");
             str += c;
         } else {
             str += currentChar;
@@ -241,7 +241,7 @@ void Lexer::makeString() {
     }
 
     if (idx >= expr->size() || currentChar != '"')
-        throw PSC::ExpectedQuotesError(line, column, true);
+        throw Interpreter::ExpectedQuotesError(line, column, true);
     advance();
 
     tokens.emplace_back(new Token(TokenType::STRING, line, startColumn, str));

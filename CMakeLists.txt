@@ -7,7 +7,7 @@ project(PseudoEngine2 VERSION 0.5.1)
 
 add_executable(PseudoEngine2)
 
-target_include_directories(PseudoEngine2 PRIVATE src)
+target_include_directories(PseudoEngine2 PRIVATE include)
 
 if(MSVC)
     string(REPLACE "/W3" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -19,7 +19,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
     target_link_options(PseudoEngine2 PRIVATE -static)
 endif()
 
-target_precompile_headers(PseudoEngine2 PRIVATE src/pch.h)
+target_precompile_headers(PseudoEngine2 PRIVATE include/pch.h)
 
 target_sources(PseudoEngine2 PRIVATE 
     src/lexer/symbolLexer.cpp
@@ -61,29 +61,29 @@ target_sources(PseudoEngine2 PRIVATE
     src/parser/ioParser.cpp
     src/parser/parser.cpp
 
-    src/psc/types/numeric.cpp
-    src/psc/types/boolean.cpp
-    src/psc/types/character.cpp
-    src/psc/types/date.cpp
-    src/psc/types/userType.cpp
-    src/psc/types/types.cpp
-    src/psc/types/type_definitions.cpp
-    src/psc/types/type_names.cpp
-    src/psc/scope/block.cpp
-    src/psc/scope/context.cpp
-    src/psc/variable.cpp
-    src/psc/array.cpp
-    src/psc/procedure.cpp
-    src/psc/file.cpp
-    src/psc/builtinFunctions/string.cpp
-    src/psc/builtinFunctions/char.cpp
-    src/psc/builtinFunctions/numeric.cpp
-    src/psc/builtinFunctions/date.cpp
-    src/psc/builtinFunctions/math.cpp
-    src/psc/error.cpp
+    src/interpreter/types/numeric.cpp
+    src/interpreter/types/boolean.cpp
+    src/interpreter/types/character.cpp
+    src/interpreter/types/date.cpp
+    src/interpreter/types/userType.cpp
+    src/interpreter/types/types.cpp
+    src/interpreter/types/type_definitions.cpp
+    src/interpreter/types/type_names.cpp
+    src/interpreter/scope/block.cpp
+    src/interpreter/scope/context.cpp
+    src/interpreter/variable.cpp
+    src/interpreter/array.cpp
+    src/interpreter/procedure.cpp
+    src/interpreter/file.cpp
+    src/interpreter/builtinFunctions/string.cpp
+    src/interpreter/builtinFunctions/char.cpp
+    src/interpreter/builtinFunctions/numeric.cpp
+    src/interpreter/builtinFunctions/date.cpp
+    src/interpreter/builtinFunctions/math.cpp
+    src/interpreter/error.cpp
     
     src/launch/repl.cpp
-    src/launch/runFile.cpp
+    src/launch/run.cpp
 
     src/main.cpp
 )

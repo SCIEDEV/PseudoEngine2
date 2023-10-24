@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "psc/error.h"
+#include "interpreter/error.h"
 #include "nodes/variable/resolver.h"
 
 
@@ -10,27 +10,27 @@ AbstractVariableResolver::AbstractVariableResolver(const Token &token)
 PointerDereferencer::PointerDereferencer(const Token &token, std::unique_ptr<AbstractVariableResolver> &&resolver)
     : AbstractVariableResolver(token), resolver(std::move(resolver)) {}
 
-PSC::DataHolder &PointerDereferencer::resolve(PSC::Context &ctx) const {
+Interpreter::DataHolder &PointerDereferencer::resolve(Interpreter::Context &ctx) const {
     auto &dh = resolver->resolve(ctx);
     if (dh.isArray())
-        throw PSC::InvalidUsageError(token, ctx, "'^' operator: Attempting to dereference non-pointer");
+        throw Interpreter::InvalidUsageError(token, ctx, "'^' operator: Attempting to dereference non-pointer");
 
-    auto &var = *static_cast<PSC::Variable*>(&dh);
-    if (var.type != PSC::DataType::POINTER)
-        throw PSC::InvalidUsageError(token, ctx, "'^' operator: Attempting to dereference non-pointer");
+    auto &var = *static_cast<Interpreter::Variable*>(&dh);
+    if (var.type != Interpreter::DataType::POINTER)
+        throw Interpreter::InvalidUsageError(token, ctx, "'^' operator: Attempting to dereference non-pointer");
 
-    PSC::Pointer &ptr = var.get<PSC::Pointer>();
-    const PSC::Context *ptrCtx = ptr.getCtx();
-    PSC::Context *tempCtx = &ctx;
+    Interpreter::Pointer &ptr = var.get<Interpreter::Pointer>();
+    const Interpreter::Context *ptrCtx = ptr.getCtx();
+    Interpreter::Context *tempCtx = &ctx;
     while (tempCtx != ptrCtx) {
         tempCtx = tempCtx->getParent();
         if (tempCtx == nullptr)
-            throw PSC::RuntimeError(token, ctx, "Attempting to access deleted object from pointer '" + var.name + "'");
+            throw Interpreter::RuntimeError(token, ctx, "Attempting to access deleted object from pointer '" + var.name + "'");
     }
 
-    PSC::Variable *ptrVar = ptr.getValue();
+    Interpreter::Variable *ptrVar = ptr.getValue();
     if (ptrVar == nullptr)
-        throw PSC::RuntimeError(token, ctx, "Attempt to access uninitalized pointer");
+        throw Interpreter::RuntimeError(token, ctx, "Attempt to access uninitalized pointer");
 
     return *ptrVar;
 }
@@ -41,19 +41,19 @@ CompositeResolver::CompositeResolver(const Token &token, std::unique_ptr<Abstrac
     member(member)
 {}
 
-PSC::DataHolder &CompositeResolver::resolve(PSC::Context &ctx) const {
+Interpreter::DataHolder &CompositeResolver::resolve(Interpreter::Context &ctx) const {
     auto &dh = resolver->resolve(ctx);
     if (dh.isArray())
-        throw PSC::InvalidUsageError(token, ctx, "'.' operator: Variable is not a composite type");
+        throw Interpreter::InvalidUsageError(token, ctx, "'.' operator: Variable is not a composite type");
 
-    auto &var = *static_cast<PSC::Variable*>(&dh);
-    if (var.type != PSC::DataType::COMPOSITE)
-        throw PSC::InvalidUsageError(token, ctx, "'.' operator: Variable is not a composite type");
+    auto &var = *static_cast<Interpreter::Variable*>(&dh);
+    if (var.type != Interpreter::DataType::COMPOSITE)
+        throw Interpreter::InvalidUsageError(token, ctx, "'.' operator: Variable is not a composite type");
     
-    auto &composite = var.get<PSC::Composite>();
+    auto &composite = var.get<Interpreter::Composite>();
     auto *memberPtr = composite.getMember(member.value);
     if (memberPtr == nullptr)
-        throw PSC::RuntimeError(token, ctx, "Type '" + composite.definitionName + "' has no member '" + member.value + "'");
+        throw Interpreter::RuntimeError(token, ctx, "Type '" + composite.definitionName + "' has no member '" + member.value + "'");
     
     return *memberPtr;
 }
@@ -64,46 +64,46 @@ ArrayElementResolver::ArrayElementResolver(const Token &token, std::unique_ptr<A
     resolver(std::move(resolver))
 {}
 
-PSC::DataHolder &ArrayElementResolver::resolve(PSC::Context &ctx) const {
+Interpreter::DataHolder &ArrayElementResolver::resolve(Interpreter::Context &ctx) const {
     auto &dh = resolver->resolve(ctx);
     if (!dh.isArray())
-        throw PSC::RuntimeError(token, ctx, "Attempting to index non-array variable '" + dh.name + "'");
+        throw Interpreter::RuntimeError(token, ctx, "Attempting to index non-array variable '" + dh.name + "'");
 
-    PSC::Array &arr = *static_cast<PSC::Array*>(&dh);
+    Interpreter::Array &arr = *static_cast<Interpreter::Array*>(&dh);
 
     if (indices.size() != arr.dimensions.size())
-        throw PSC::RuntimeError(token, ctx, "Invalid number of indices");
+        throw Interpreter::RuntimeError(token, ctx, "Invalid number of indices");
 
-    std::vector<PSC::int_t> evaluatedIndices;
+    std::vector<Interpreter::int_t> evaluatedIndices;
     evaluatedIndices.reserve(indices.size());
 
     for (size_t i = 0; i < indices.size(); i++) {
         Node *index = indices[i];
         auto result = index->evaluate(ctx);
 
-        if (result->type != PSC::DataType::INTEGER)
-            throw PSC::RuntimeError(index->getToken(), ctx, "Array indices must be of type INTEGER");
+        if (result->type != Interpreter::DataType::INTEGER)
+            throw Interpreter::RuntimeError(index->getToken(), ctx, "Array indices must be of type INTEGER");
 
-        PSC::int_t x = result->get<PSC::Integer>().value;
+        Interpreter::int_t x = result->get<Interpreter::Integer>().value;
         if (!arr.dimensions[i].isValidIndex(x))
-            throw PSC::RuntimeError(index->getToken(), ctx, "Index out of bounds");
+            throw Interpreter::RuntimeError(index->getToken(), ctx, "Index out of bounds");
 
         evaluatedIndices.push_back(x);
     }
 
-    PSC::Variable &var = arr.getElement(evaluatedIndices);
+    Interpreter::Variable &var = arr.getElement(evaluatedIndices);
     return var;
 }
 
-PSC::DataHolder &SimpleVariableSource::resolve(PSC::Context &ctx) const {
-    PSC::Variable *var = ctx.getVariable(token.value);
+Interpreter::DataHolder &SimpleVariableSource::resolve(Interpreter::Context &ctx) const {
+    Interpreter::Variable *var = ctx.getVariable(token.value);
     if (var != nullptr) return *var;
 
-    PSC::Array *arr = ctx.getArray(token.value);
+    Interpreter::Array *arr = ctx.getArray(token.value);
     if (arr != nullptr)
         return *arr;
 
-    throw PSC::NotDefinedError(token, ctx, "Identifier '" + token.value + "'");
+    throw Interpreter::NotDefinedError(token, ctx, "Identifier '" + token.value + "'");
 }
 
 const std::string &SimpleVariableSource::getName() const {

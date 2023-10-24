@@ -3,10 +3,9 @@
 #include <string>
 #include "launch/run.h"
 
-extern std::string psfilename;
 extern bool REPLMode;
 
-static const std::string multilineKeywords[] = {
+static const std::string_view multilineKeywords[] = {
     "IF",
     "CASE",
     "WHILE",
@@ -18,60 +17,60 @@ static const std::string multilineKeywords[] = {
 };
 
 bool startREPL() {
-    std::cout << "PseudoEngine2 v0.5.1 REPL\nEnter 'EXIT' to quit\n";
+    std::cout << "scie.dev pseudocode compiler repl. enter 'EXIT' to quit";
 
     Lexer lexer;
     Parser parser;
-    auto globalCtx = PSC::Context::createGlobalContext();
+    auto globalCtx = Interpreter::Context::createGlobalContext();
 
     while (true) {
         std::cout << "> " << std::flush;
-        std::string code;
-        std::getline(std::cin, code);
+        std::string input;
+        std::getline(std::cin, input);
 
-        size_t size = code.size();
-        if (size == 0) continue;
-        if (code == "EXIT") break;
-        if (code.starts_with("RUNFILE")) {
+        size_t size = input.size();
+        if (input.empty()) continue;
+        if (input == "EXIT") break;
+        if (input.starts_with("INCLUDE")) {
             if (size < 9) {
-                std::cerr << "Expected filename" << std::endl;
+                std::cerr << "expected filename: INCLUDE <filename>" << std::endl;
                 continue;
             }
-            psfilename = code.substr(8, size - 8);
+            std::filesystem::path psfilename = input.substr(8, size - 8);
             REPLMode = false;
             
-            std::cout << "Running file " << psfilename << "\n";
-            std::string exit = runFile() ? "successfully" : "with an error";
-            std::cout << "\nProgram exited " << exit << "\n";
+            std::cout << "running file" << psfilename << "\n";
+			std::string_view statusMessage = runFile(psfilename) ? "success\n" : "error\n";
+            std::cout << "\nprogram exited " << statusMessage << "\n";
             
             psfilename = "<stdin>";
             REPLMode = true;
             continue;
         }
 
-        for (const std::string &keyword : multilineKeywords) {
-            if (code.starts_with(keyword)) {
-                if (keyword == "TYPE" && code.find("=") != std::string::npos) break;
+        for (const std::string_view &keyword : multilineKeywords) {
+            if (input.starts_with(keyword)) {
+                if (keyword == "TYPE" && input.find("=") != std::string::npos) break;
                 std::string line = " ";
                 while (line.size() > 0) {
-                    code += "\n";
+					input += "\n";
                     std::cout << ". " << std::flush;
                     std::getline(std::cin, line);
-                    code += line;
+					input += line;
                 }
                 break;
             }
         }
 
-        lexer.setExpr(&code);
+        lexer.setExpr(&input);
         try {
             const std::vector<Token*> &tokens = lexer.makeTokens();
             parser.setTokens(&tokens);
-            PSC::Block *block = parser.parse();
+            Interpreter::Block *block = parser.parse();
 
             std::cout.precision(10);
             block->run(*globalCtx);
-        } catch (const PSC::Error &e) {
+        } catch (const Interpreter::Error &e) {
             std::cout << "\n";
             e.print();
         }

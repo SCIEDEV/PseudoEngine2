@@ -1,44 +1,44 @@
 #include "pch.h"
 
-#include "psc/error.h"
+#include "interpreter/error.h"
 #include "nodes/cast.h"
 
-CastNode::CastNode(const Token &token, Node &node, PSC::DataType target)
+CastNode::CastNode(const Token &token, Node &node, Interpreter::DataType target)
     : UnaryNode(token, node), target(target)
 {}
 
-std::unique_ptr<NodeResult> CastNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> CastNode::evaluate(Interpreter::Context &ctx) {
     auto value = node.evaluate(ctx);
 
     if (!value->data->isPrimitive())
-        throw PSC::TypeOperationError(token, ctx, "Cast");
+        throw Interpreter::TypeOperationError(token, ctx, "Cast");
     if (value->type == target) return value;
 
-    auto pvalue = static_cast<const PSC::Primitive*>(value->data.get());
+    auto pvalue = static_cast<const Interpreter::Primitive*>(value->data.get());
 
-    std::unique_ptr<PSC::Value> result;
+    std::unique_ptr<Interpreter::Value> result;
     switch(target.type) {
-        case PSC::DataType::INTEGER:
+        case Interpreter::DataType::INTEGER:
             result = pvalue->toInteger();
             break;
-        case PSC::DataType::REAL:
+        case Interpreter::DataType::REAL:
             result = pvalue->toReal();
             break;
-        case PSC::DataType::BOOLEAN:
+        case Interpreter::DataType::BOOLEAN:
             result = pvalue->toBoolean();
             break;
-        case PSC::DataType::CHAR:
+        case Interpreter::DataType::CHAR:
             result = pvalue->toChar();
             break;
-        case PSC::DataType::STRING:
+        case Interpreter::DataType::STRING:
             result = pvalue->toString();
             break;
-        case PSC::DataType::DATE:
-        case PSC::DataType::ENUM:
-        case PSC::DataType::POINTER:
-        case PSC::DataType::COMPOSITE:
-            throw PSC::TypeOperationError(token, ctx, "Cast");
-        case PSC::DataType::NONE:
+        case Interpreter::DataType::DATE:
+        case Interpreter::DataType::ENUM:
+        case Interpreter::DataType::POINTER:
+        case Interpreter::DataType::COMPOSITE:
+            throw Interpreter::TypeOperationError(token, ctx, "Cast");
+        case Interpreter::DataType::NONE:
             std::abort();
     }
 

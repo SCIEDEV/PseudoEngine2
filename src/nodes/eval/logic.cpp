@@ -1,7 +1,7 @@
 #include "pch.h"
 
-#include "psc/error.h"
-#include "psc/types/types.h"
+#include "interpreter/error.h"
+#include "interpreter/types/types.h"
 #include "nodes/eval/logic.h"
 
 LogicNode::LogicNode(const Token &token, Node &left, Node &right)
@@ -19,18 +19,18 @@ LogicNode::LogicNode(const Token &token, Node &left, Node &right)
     }
 }
 
-std::unique_ptr<NodeResult> LogicNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> LogicNode::evaluate(Interpreter::Context &ctx) {
     auto leftRes = left.evaluate(ctx);
     auto rightRes = right.evaluate(ctx);
 
-    if (leftRes->type != PSC::DataType::BOOLEAN || rightRes->type != PSC::DataType::BOOLEAN) {
-        throw PSC::InvalidUsageError(token, ctx, "'" + op + "' operator, operands must be of type Boolean");
+    if (leftRes->type != Interpreter::DataType::BOOLEAN || rightRes->type != Interpreter::DataType::BOOLEAN) {
+        throw Interpreter::InvalidUsageError(token, ctx, "'" + op + "' operator, operands must be of type Boolean");
     }
 
-    const PSC::Boolean &leftBool = leftRes->get<PSC::Boolean>();
-    const PSC::Boolean &rightBool = rightRes->get<PSC::Boolean>();
+    const Interpreter::Boolean &leftBool = leftRes->get<Interpreter::Boolean>();
+    const Interpreter::Boolean &rightBool = rightRes->get<Interpreter::Boolean>();
 
-    PSC::Boolean *res = new PSC::Boolean();
+    Interpreter::Boolean *res = new Interpreter::Boolean();
     switch (token.type) {
         case TokenType::AND:
             *res = leftBool && rightBool;
@@ -42,17 +42,17 @@ std::unique_ptr<NodeResult> LogicNode::evaluate(PSC::Context &ctx) {
             std::abort();
     }
 
-    return std::make_unique<NodeResult>(res, PSC::DataType::BOOLEAN);
+    return std::make_unique<NodeResult>(res, Interpreter::DataType::BOOLEAN);
 }
 
 
-std::unique_ptr<NodeResult> NotNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> NotNode::evaluate(Interpreter::Context &ctx) {
     auto nodeRes = node.evaluate(ctx);
 
-    if (nodeRes->type != PSC::DataType::BOOLEAN) {
-        throw PSC::InvalidUsageError(token, ctx, "'NOT' operator, operand must be of type Boolean");
+    if (nodeRes->type != Interpreter::DataType::BOOLEAN) {
+        throw Interpreter::InvalidUsageError(token, ctx, "'NOT' operator, operand must be of type Boolean");
     }
 
-    PSC::Boolean *res = new PSC::Boolean(!nodeRes->get<PSC::Boolean>());
-    return std::make_unique<NodeResult>(res, PSC::DataType::BOOLEAN);
+    Interpreter::Boolean *res = new Interpreter::Boolean(!nodeRes->get<Interpreter::Boolean>());
+    return std::make_unique<NodeResult>(res, Interpreter::DataType::BOOLEAN);
 }

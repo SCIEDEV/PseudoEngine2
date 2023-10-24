@@ -1,5 +1,2 @@
-.cache
-.vscode
-.vs
 build
-out
+.idea

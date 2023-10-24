@@ -116,7 +116,7 @@ const std::vector<Token*> Lexer::makeTokens() {
         } else if (currentChar == '\n') {
             tokens.emplace_back(new Token(TokenType::LINE_END, line, column));
         } else if (currentChar != ' ' && currentChar != '\t') {
-            throw PSC::InvalidCharError(line, column, currentChar);
+            throw Interpreter::InvalidCharError(line, column, currentChar);
         }
         advance();
     }

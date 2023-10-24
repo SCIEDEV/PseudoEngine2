@@ -7,7 +7,7 @@ Node *Parser::parseCall() {
     advance();
 
     if (currentToken->type != TokenType::IDENTIFIER)
-        throw PSC::ExpectedTokenError(*currentToken, "identifier");
+        throw Interpreter::ExpectedTokenError(*currentToken, "identifier");
 
     const std::string &identifier = currentToken->value;
     advance();
@@ -27,7 +27,7 @@ Node *Parser::parseCall() {
             }
 
             if (currentToken->type != TokenType::RPAREN)
-                throw PSC::ExpectedTokenError(*currentToken, "')'");
+                throw Interpreter::ExpectedTokenError(*currentToken, "')'");
             advance();
         }
     }
@@ -40,7 +40,7 @@ Node *Parser::parseProcedure() {
     advance();
 
     if (currentToken->type != TokenType::IDENTIFIER)
-        throw PSC::ExpectedTokenError(*currentToken, "identifier");
+        throw Interpreter::ExpectedTokenError(*currentToken, "identifier");
     const std::string &procedureName = currentToken->value;
     advance();
 
@@ -57,7 +57,7 @@ Node *Parser::parseProcedure() {
         while (currentToken->type != TokenType::RPAREN) {
             if (parameterNames.size() > 0) {
                 if (currentToken->type != TokenType::COMMA)
-                    throw PSC::ExpectedTokenError(*currentToken, "','");
+                    throw Interpreter::ExpectedTokenError(*currentToken, "','");
                 advance();
             }
 
@@ -80,7 +80,7 @@ Node *Parser::parseProcedure() {
             }
 
             if (currentToken->type != TokenType::IDENTIFIER)
-                throw PSC::ExpectedTokenError(*currentToken, "identifier or ')'");
+                throw Interpreter::ExpectedTokenError(*currentToken, "identifier or ')'");
             const std::string &paramName = currentToken->value;
             advance();
 
@@ -90,10 +90,10 @@ Node *Parser::parseProcedure() {
                 typeCount++;
                 continue;
             }
-            else throw PSC::ExpectedTokenError(*currentToken, "':'");
+            else throw Interpreter::ExpectedTokenError(*currentToken, "':'");
 
             if (currentToken->type != TokenType::DATA_TYPE && currentToken->type != TokenType::IDENTIFIER)
-                throw PSC::ExpectedTokenError(*currentToken, "data type");
+                throw Interpreter::ExpectedTokenError(*currentToken, "data type");
             const Token *type = currentToken;
             advance();
 
@@ -104,7 +104,7 @@ Node *Parser::parseProcedure() {
             }
             typeCount = 1;
         }
-        if (typeCount != 1) throw PSC::ExpectedTokenError(*currentToken, "data type"); 
+        if (typeCount != 1) throw Interpreter::ExpectedTokenError(*currentToken, "data type");
         if (passTypeCount > 0) {
             parameterPassTypes.reserve(passTypeCount);
             for (int i = 0; i < passTypeCount; i++)
@@ -113,9 +113,9 @@ Node *Parser::parseProcedure() {
         advance(); // ')'
     }
 
-    PSC::Block *block = parseBlock();
+    Interpreter::Block *block = parseBlock();
     if (currentToken->type != TokenType::ENDPROCEDURE)
-        throw PSC::ExpectedTokenError(*currentToken, "'ENDPROCEDURE'");
+        throw Interpreter::ExpectedTokenError(*currentToken, "'ENDPROCEDURE'");
     advance();
 
     return create<ProcedureNode>(

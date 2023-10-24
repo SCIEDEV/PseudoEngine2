@@ -5,22 +5,34 @@
 
 #include "launch/run.h"
 
-std::string psfilename = "<stdin>";
 bool REPLMode = true;
 
 int main(int argc, char **argv) {
-    auto fn = startREPL;
-
+	// `/dev/random` only exists on Unix.
+#ifndef WIN32
+	std::FILE *fd = std::fopen("/dev/random", "r");
+	unsigned int seed = 0;
+	// Read the first 4 bytes of /dev/random into an unsigned integer so that we can seed the random number generator.
+	fread(&seed, 4, 1, fd);
+	fclose(fd);
+	srand(seed);
+#else
+	// FIXME: Better seeding on the niche gaming operating system Microsoft Windows.
+	srand((unsigned int) time(nullptr));
+#endif
+	bool status;
+	if (argc == 1) {
+		status = startREPL();
+	}
     if (argc == 2) {
-        psfilename = argv[1];
         REPLMode = false;
-        fn = runFile;
+		std::filesystem::path filepath(argv[1]);
+        status = runFile(filepath);
     } else if (argc > 2) {
-        std::cerr << "Too many arguements!\nUsage:\n" << argv[0] << " <filename>" << std::endl;
+        std::cerr << "Too many arguments!\nUsage:\n" << argv[0] << " <filename>" << std::endl;
         return EXIT_FAILURE;
     }
 
-    srand((unsigned int) time(NULL));
 
-    return fn() ? EXIT_SUCCESS : EXIT_FAILURE;
+    return status ? EXIT_SUCCESS : EXIT_FAILURE;
 }

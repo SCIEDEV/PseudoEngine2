@@ -1,125 +1,125 @@
 #include "pch.h"
 
 #include "nodes/io/file.h"
-#include "psc/error.h"
-#include "psc/file.h"
+#include "interpreter/error.h"
+#include "interpreter/file.h"
 
-OpenFileNode::OpenFileNode(const Token &token, Node &filename, PSC::FileMode mode)
+OpenFileNode::OpenFileNode(const Token &token, Node &filename, Interpreter::FileMode mode)
     : Node(token), mode(mode), filename(filename) {}
 
-std::unique_ptr<NodeResult> OpenFileNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> OpenFileNode::evaluate(Interpreter::Context &ctx) {
     auto filenameRes = filename.evaluate(ctx);
-    if (filenameRes->type != PSC::DataType::STRING)
-        throw PSC::RuntimeError(token, ctx, "Expected string for file name");
+    if (filenameRes->type != Interpreter::DataType::STRING)
+        throw Interpreter::RuntimeError(token, ctx, "Expected string for file name");
 
-    const PSC::String &filename = filenameRes->get<PSC::String>();
+    const Interpreter::String &filename = filenameRes->get<Interpreter::String>();
 
-    PSC::File *file = ctx.getFileManager().getFile(filename);
+    Interpreter::File *file = ctx.getFileManager().getFile(filename);
     if (file != nullptr)
-        throw PSC::RuntimeError(token, ctx, "File '" + filename.value + "' is already open");
+        throw Interpreter::RuntimeError(token, ctx, "File '" + filename.value + "' is already open");
 
     bool success = ctx.getFileManager().createFile(filename, mode);
     if (!success)
-        throw PSC::RuntimeError(token, ctx, "Failed to open file '" + filename.value + "'");
+        throw Interpreter::RuntimeError(token, ctx, "Failed to open file '" + filename.value + "'");
 
-    return std::make_unique<NodeResult>(nullptr, PSC::DataType::NONE);
+    return std::make_unique<NodeResult>(nullptr, Interpreter::DataType::NONE);
 }
 
 
 ReadFileNode::ReadFileNode(const Token &token, Node &filename, const Token &identifier)
     : Node(token), filename(filename), identifier(identifier) {}
 
-std::unique_ptr<NodeResult> ReadFileNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> ReadFileNode::evaluate(Interpreter::Context &ctx) {
     auto filenameRes = filename.evaluate(ctx);
-    if (filenameRes->type != PSC::DataType::STRING)
-        throw PSC::RuntimeError(token, ctx, "Expected string for file name");
+    if (filenameRes->type != Interpreter::DataType::STRING)
+        throw Interpreter::RuntimeError(token, ctx, "Expected string for file name");
     
-    PSC::Variable *var = ctx.getVariable(identifier.value);
+    Interpreter::Variable *var = ctx.getVariable(identifier.value);
     if (var == nullptr) {
-        var = new PSC::Variable(identifier.value, PSC::DataType::STRING, false, &ctx);
+        var = new Interpreter::Variable(identifier.value, Interpreter::DataType::STRING, false, &ctx);
         ctx.addVariable(var);
     }
-    if (var->type != PSC::DataType::STRING)
-        throw PSC::RuntimeError(token, ctx, "Variable of type STRING expected");
+    if (var->type != Interpreter::DataType::STRING)
+        throw Interpreter::RuntimeError(token, ctx, "Variable of type STRING expected");
 
-    auto &filename = filenameRes->get<PSC::String>();
-    PSC::File *file = ctx.getFileManager().getFile(filename);
+    auto &filename = filenameRes->get<Interpreter::String>();
+    Interpreter::File *file = ctx.getFileManager().getFile(filename);
     if (file == nullptr)
-        throw PSC::FileNotOpenError(token, ctx, filename.value);
+        throw Interpreter::FileNotOpenError(token, ctx, filename.value);
     
-    PSC::String *data = new PSC::String;
+    Interpreter::String *data = new Interpreter::String;
     *data = file->read();
     var->set(data);
 
-    return std::make_unique<NodeResult>(nullptr, PSC::DataType::NONE);
+    return std::make_unique<NodeResult>(nullptr, Interpreter::DataType::NONE);
 }
 
 
 WriteFileNode::WriteFileNode(const Token &token, Node &filename, Node &node)
     : UnaryNode(token, node), filename(filename) {}
 
-std::unique_ptr<NodeResult> WriteFileNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> WriteFileNode::evaluate(Interpreter::Context &ctx) {
     auto filenameRes = filename.evaluate(ctx);
-    if (filenameRes->type != PSC::DataType::STRING)
-        throw PSC::RuntimeError(token, ctx, "Expected string for file name");
+    if (filenameRes->type != Interpreter::DataType::STRING)
+        throw Interpreter::RuntimeError(token, ctx, "Expected string for file name");
     
-    auto &filename = filenameRes->get<PSC::String>();
-    PSC::File *file = ctx.getFileManager().getFile(filename);
+    auto &filename = filenameRes->get<Interpreter::String>();
+    Interpreter::File *file = ctx.getFileManager().getFile(filename);
     if (file == nullptr)
-        throw PSC::FileNotOpenError(token, ctx, filename.value);
-    if (file->getMode() == PSC::FileMode::READ)
-        throw PSC::RuntimeError(token, ctx, "File '" + filename.value + "' is opened as read-only");
+        throw Interpreter::FileNotOpenError(token, ctx, filename.value);
+    if (file->getMode() == Interpreter::FileMode::READ)
+        throw Interpreter::RuntimeError(token, ctx, "File '" + filename.value + "' is opened as read-only");
 
     auto nodeRes = node.evaluate(ctx);
-    std::unique_ptr<PSC::String> data;
+    std::unique_ptr<Interpreter::String> data;
     switch (nodeRes->type.type) {
-        case PSC::DataType::INTEGER:
-            data = nodeRes->get<PSC::Integer>().toString();
+        case Interpreter::DataType::INTEGER:
+            data = nodeRes->get<Interpreter::Integer>().toString();
             break;
-        case PSC::DataType::REAL:
-            data = nodeRes->get<PSC::Real>().toString();
+        case Interpreter::DataType::REAL:
+            data = nodeRes->get<Interpreter::Real>().toString();
             break;
-        case PSC::DataType::BOOLEAN:
-            data = nodeRes->get<PSC::Boolean>().toString();
+        case Interpreter::DataType::BOOLEAN:
+            data = nodeRes->get<Interpreter::Boolean>().toString();
             break;
-        case PSC::DataType::CHAR:
-            data = nodeRes->get<PSC::Char>().toString();
+        case Interpreter::DataType::CHAR:
+            data = nodeRes->get<Interpreter::Char>().toString();
             break;
-        case PSC::DataType::STRING: {
-            auto str = nodeRes->get<PSC::String>();
-            data = std::make_unique<PSC::String>(str);
+        case Interpreter::DataType::STRING: {
+            auto str = nodeRes->get<Interpreter::String>();
+            data = std::make_unique<Interpreter::String>(str);
             break;
-        } case PSC::DataType::DATE:
-            data = nodeRes->get<PSC::Date>().toString();
+        } case Interpreter::DataType::DATE:
+            data = nodeRes->get<Interpreter::Date>().toString();
             break;
-        case PSC::DataType::NONE:
-            throw PSC::RuntimeError(token, ctx, "Expected value for writing");
-        case PSC::DataType::ENUM:
-        case PSC::DataType::POINTER:
-        case PSC::DataType::COMPOSITE:
-            throw PSC::TypeOperationError(token, ctx, "Write");
+        case Interpreter::DataType::NONE:
+            throw Interpreter::RuntimeError(token, ctx, "Expected value for writing");
+        case Interpreter::DataType::ENUM:
+        case Interpreter::DataType::POINTER:
+        case Interpreter::DataType::COMPOSITE:
+            throw Interpreter::TypeOperationError(token, ctx, "Write");
     }
 
     file->write(*data);
 
-    return std::make_unique<NodeResult>(nullptr, PSC::DataType::NONE);
+    return std::make_unique<NodeResult>(nullptr, Interpreter::DataType::NONE);
 }
 
 
 CloseFileNode::CloseFileNode(const Token &token, Node &filename)
     : Node(token), filename(filename) {}
 
-std::unique_ptr<NodeResult> CloseFileNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> CloseFileNode::evaluate(Interpreter::Context &ctx) {
     auto filenameRes = filename.evaluate(ctx);
-    if (filenameRes->type != PSC::DataType::STRING)
-        throw PSC::RuntimeError(token, ctx, "Expected string for file name");
+    if (filenameRes->type != Interpreter::DataType::STRING)
+        throw Interpreter::RuntimeError(token, ctx, "Expected string for file name");
     
-    auto &filename = filenameRes->get<PSC::String>();
-    PSC::File *file = ctx.getFileManager().getFile(filename);
+    auto &filename = filenameRes->get<Interpreter::String>();
+    Interpreter::File *file = ctx.getFileManager().getFile(filename);
     if (file == nullptr)
-        throw PSC::FileNotOpenError(token, ctx, filename.value);
+        throw Interpreter::FileNotOpenError(token, ctx, filename.value);
 
     ctx.getFileManager().closeFile(filename);
 
-    return std::make_unique<NodeResult>(nullptr, PSC::DataType::NONE);
+    return std::make_unique<NodeResult>(nullptr, Interpreter::DataType::NONE);
 }

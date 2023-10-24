@@ -1,35 +1,35 @@
 #include "pch.h"
 
-#include "nodeResult.h"
+#include "nodes/nodeResult.h"
 
-NodeResult::NodeResult(const PSC::Value *data, PSC::DataType type)
+NodeResult::NodeResult(const Interpreter::Value *data, Interpreter::DataType type)
     : data(data), type(type)
 {}
 
-NodeResult::NodeResult(std::unique_ptr<const PSC::Value> &&data, PSC::DataType type)
+NodeResult::NodeResult(std::unique_ptr<const Interpreter::Value> &&data, Interpreter::DataType type)
     : type(type)
 {
     this->data = std::move(data);
 }
 
-void NodeResult::implicitCast(PSC::DataType target) {
+void NodeResult::implicitCast(Interpreter::DataType target) {
     // REAL -> INTEGER
-    if (target == PSC::DataType::REAL && type == PSC::DataType::INTEGER) {
-        type = PSC::DataType::REAL;
-        data = static_cast<const PSC::Primitive*>(data.get())->toReal();
+    if (target == Interpreter::DataType::REAL && type == Interpreter::DataType::INTEGER) {
+        type = Interpreter::DataType::REAL;
+        data = static_cast<const Interpreter::Primitive*>(data.get())->toReal();
     }
 
     // STRING -> CHAR
-    else if (target == PSC::DataType::CHAR && type == PSC::DataType::STRING
-        && ((const PSC::String*) data.get())->value.length() == 1
+    else if (target == Interpreter::DataType::CHAR && type == Interpreter::DataType::STRING
+			 && ((const Interpreter::String*) data.get())->value.length() == 1
     ) {
-        type = PSC::DataType::CHAR;
-        data = std::make_unique<PSC::Char>(((const PSC::String*) data.get())->value[0]);
+        type = Interpreter::DataType::CHAR;
+        data = std::make_unique<Interpreter::Char>(((const Interpreter::String*) data.get())->value[0]);
     }
 
     // CHAR -> STRING
-    else if (target == PSC::DataType::STRING && type == PSC::DataType::CHAR) {
-        type = PSC::DataType::STRING;
-        data = static_cast<const PSC::Primitive*>(data.get())->toString();
+    else if (target == Interpreter::DataType::STRING && type == Interpreter::DataType::CHAR) {
+        type = Interpreter::DataType::STRING;
+        data = static_cast<const Interpreter::Primitive*>(data.get())->toString();
     }
 }

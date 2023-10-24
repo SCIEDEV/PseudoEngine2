@@ -1,23 +1,23 @@
 #include "pch.h"
 
-#include "psc/error.h"
+#include "interpreter/error.h"
 #include "nodes/variable/variable.h"
 #include "nodes/variable/pointer.h"
 
 PointerDefineNode::PointerDefineNode(const Token &token, const Token &name, const Token &type)
     : Node(token), name(name), type(type) {}
 
-std::unique_ptr<NodeResult> PointerDefineNode::evaluate(PSC::Context &ctx) {
-    PSC::DataType pointerType = ctx.getType(type);
-    if (pointerType == PSC::DataType::NONE)
-        throw PSC::NotDefinedError(token, ctx, "Type '" + type.value + "'");
+std::unique_ptr<NodeResult> PointerDefineNode::evaluate(Interpreter::Context &ctx) {
+    Interpreter::DataType pointerType = ctx.getType(type);
+    if (pointerType == Interpreter::DataType::NONE)
+        throw Interpreter::NotDefinedError(token, ctx, "Type '" + type.value + "'");
 
     if (ctx.isIdentifierType(name, false))
-        throw PSC::RedefinitionError(token, ctx, name.value);
+        throw Interpreter::RedefinitionError(token, ctx, name.value);
 
-    PSC::PointerTypeDefinition definition(name.value, pointerType);
+    Interpreter::PointerTypeDefinition definition(name.value, pointerType);
     ctx.createPointerDefinition(std::move(definition));
-    return std::make_unique<NodeResult>(nullptr, PSC::DataType::NONE);
+    return std::make_unique<NodeResult>(nullptr, Interpreter::DataType::NONE);
 }
 
 PointerAssignNode::PointerAssignNode(
@@ -29,29 +29,29 @@ PointerAssignNode::PointerAssignNode(
     valueResolver(std::move(valueResolver))
 {}
 
-std::unique_ptr<NodeResult> PointerAssignNode::evaluate(PSC::Context &ctx) {
+std::unique_ptr<NodeResult> PointerAssignNode::evaluate(Interpreter::Context &ctx) {
     auto &pointerHolder = pointerResolver->resolve(ctx);
     if (pointerHolder.isArray())
-        throw PSC::ArrayDirectAccessError(token, ctx);
+        throw Interpreter::ArrayDirectAccessError(token, ctx);
 
     auto &valueHolder = valueResolver->resolve(ctx);
     if (valueHolder.isArray())
-        throw PSC::RuntimeError(token, ctx, "Cannot store pointer to array");
+        throw Interpreter::RuntimeError(token, ctx, "Cannot store pointer to array");
     
-    auto &pointerVar = *static_cast<PSC::Variable*>(&pointerHolder);
-    auto &value = *static_cast<PSC::Variable*>(&valueHolder);
+    auto &pointerVar = *static_cast<Interpreter::Variable*>(&pointerHolder);
+    auto &value = *static_cast<Interpreter::Variable*>(&valueHolder);
 
-    if (pointerVar.type.type != PSC::DataType::POINTER)
-        throw PSC::RuntimeError(token, ctx, "Cannot assign pointer to variable not of type pointer");
+    if (pointerVar.type.type != Interpreter::DataType::POINTER)
+        throw Interpreter::RuntimeError(token, ctx, "Cannot assign pointer to variable not of type pointer");
 
-    auto &pointer = pointerVar.get<PSC::Pointer>();
+    auto &pointer = pointerVar.get<Interpreter::Pointer>();
     auto &pointerType = pointer.getDefinition(ctx).type;
     if (pointerType != value.type)
-        throw PSC::RuntimeError(token, ctx, "Assignment Error: Incompatible data types");
+        throw Interpreter::RuntimeError(token, ctx, "Assignment Error: Incompatible data types");
     
-    PSC::Variable *v = value.getReference();
+    Interpreter::Variable *v = value.getReference();
     if (v == nullptr) v = &value;
     pointer.setValue(v);
 
-    return std::make_unique<NodeResult>(nullptr, PSC::DataType::NONE);
+    return std::make_unique<NodeResult>(nullptr, Interpreter::DataType::NONE);
 }
